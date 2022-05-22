@@ -15,6 +15,7 @@ async function getStatus(e){
     if (response.ok) {
         displayStatus(data);
     } else {
+        displayException(data);
         throw new Error(data.error);
     }
 }
@@ -25,23 +26,35 @@ function displayStatus(data) {
     resultsModal.show();
 }
 
-async function postForm(e){
-    const form = new FormData(document.getElementById("checksform"));
+function getOptions(form) {
 
-    // const response = await fetch(API_URL, {
-    //     method: "POST",
-    //     headers: {
-    //         "Authorization": API_KEY,
-    //     },
-    //     body: form,
-    // });
+    let formOptions = [];
+
+    for (let entry of form) {
+        if (entry[0] === 'options') {
+            formOptions.push(entry[1]);
+        }
+    }
+
+    form.delete("options");
+    form.append("options", formOptions.join());
+
+    return form;
+}
+
+async function postForm(e){
+    const form = getOptions(new FormData(document.getElementById("checksform")));
+
+    for (let entry of form.entries()) {
+        console.log(entry);
+    }
 
     const response = await fetch(API_URL, {
         method: "POST",
         headers: {
             "Authorization": API_KEY,
         },
-        body: ["url", "https://mattrudge.net/assets/js/menu.js"],
+        body: form,
     });
 
     const data = await response.json();
@@ -49,6 +62,7 @@ async function postForm(e){
     if (response.ok) {
         displayErrors(data);
     } else {
+        displayException(data);
         throw new Error(data.error);
     };
 }
@@ -68,5 +82,16 @@ function displayErrors(data) {
     }
     document.getElementById('resultsModalTitle').innerText = heading;
     document.getElementById('results-content').innerHTML = results;
+    resultsModal.show();
+}
+
+function displayException(data) {
+    let heading = "An exception occurred";
+    let exception = `<div>The API returned status code <strong>${data.status_code}</strong></div>`
+    exception += `<div>Error number: <strong>${data.error_no}</strong></div>`
+    exception += `<div>Error text: <strong>${data.error}</strong></div>`
+
+    document.getElementById('resultsModalTitle').innerText = heading;
+    document.getElementById('results-content').innerHTML = exception;
     resultsModal.show();
 }
